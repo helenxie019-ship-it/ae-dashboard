@@ -27,25 +27,32 @@
     .date-selector {
       display: flex;
       justify-content: center;
-      gap: 10px;
+      gap: 15px;
       margin-bottom: 30px;
       flex-wrap: wrap;
+      align-items: center;
     }
-    .date-btn {
-      padding: 10px 20px;
-      border: 1px solid #30363d;
-      background: #161b22;
+    .date-selector label {
       color: #8b949e;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
       font-size: 14px;
     }
-    .date-btn:hover { border-color: #58a6ff; color: #58a6ff; }
-    .date-btn.active {
-      background: linear-gradient(135deg, #238636, #2ea043);
-      border-color: #238636;
-      color: #fff;
+    .date-selector select {
+      padding: 10px 16px;
+      border: 1px solid #30363d;
+      background: #161b22;
+      color: #e6edf3;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      min-width: 100px;
+      outline: none;
+    }
+    .date-selector select:focus {
+      border-color: #58a6ff;
+    }
+    .date-selector select option {
+      background: #161b22;
+      color: #e6edf3;
     }
     .kpi-cards {
       display: grid;
@@ -182,7 +189,14 @@
     <div class="subtitle">每日运营数据监控</div>
   </div>
 
-  <div class="date-selector" id="dateSelector"></div>
+  <div class="date-selector" id="dateSelector">
+    <label>年份</label>
+    <select id="yearSelect"></select>
+    <label>月份</label>
+    <select id="monthSelect"></select>
+    <label>日期</label>
+    <select id="daySelect"></select>
+  </div>
 
   <div class="kpi-cards" id="kpiCards">
     <div class="kpi-card sku" data-indicator="sku" onclick="selectIndicator('sku')">
@@ -296,23 +310,94 @@
     let currentTimeRange = 7;
     let currentIndicator = 'all';
 
+    function parseDateStr(str) {
+      const match = str.match(/(d+)月(d+)日/);
+      if (match) {
+        return { year: 2026, month: parseInt(match[1]), day: parseInt(match[2]) };
+      }
+      return null;
+    }
+
     function initDateSelector() {
-      const container = document.getElementById('dateSelector');
-      container.innerHTML = '';
-      rawData.dates.forEach((date, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'date-btn' + (index === currentIndex ? ' active' : '');
-        btn.textContent = date;
-        btn.onclick = () => selectDate(index);
-        container.appendChild(btn);
+      const yearSelect = document.getElementById('yearSelect');
+      const monthSelect = document.getElementById('monthSelect');
+      const daySelect = document.getElementById('daySelect');
+
+      const parsedDates = rawData.dates.map((str, idx) => {
+        const parsed = parseDateStr(str);
+        return parsed ? { ...parsed, index: idx, original: str } : null;
+      }).filter(d => d !== null);
+
+      const allYears = [...new Set(parsedDates.map(d => d.year))].sort((a, b) => a - b);
+
+      function populateMonths(selectedYear) {
+        monthSelect.innerHTML = '';
+        const availableMonths = [...new Set(parsedDates.filter(d => d.year === selectedYear).map(d => d.month))].sort((a, b) => a - b);
+        availableMonths.forEach(month => {
+          const opt = document.createElement('option');
+          opt.value = month;
+          opt.textContent = month + '月';
+          monthSelect.appendChild(opt);
+        });
+      }
+
+      function populateDays(selectedYear, selectedMonth) {
+        daySelect.innerHTML = '';
+        const availableDays = parsedDates.filter(d => d.year === selectedYear && d.month === selectedMonth).sort((a, b) => a.day - b.day);
+        availableDays.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.index;
+          opt.textContent = d.day + '日';
+          daySelect.appendChild(opt);
+        });
+      }
+
+      function updateDaySelection() {
+        const year = parseInt(yearSelect.value);
+        const month = parseInt(monthSelect.value);
+        populateDays(year, month);
+        const days = parsedDates.filter(d => d.year === year && d.month === month).sort((a, b) => a.day - b.day);
+        if (days.length > 0) {
+          daySelect.value = days[days.length - 1].index;
+          selectDate(days[days.length - 1].index);
+        }
+      }
+
+      yearSelect.innerHTML = '';
+      allYears.forEach(year => {
+        const opt = document.createElement('option');
+        opt.value = year;
+        opt.textContent = year + '年';
+        yearSelect.appendChild(opt);
       });
+
+      yearSelect.onchange = () => {
+        populateMonths(parseInt(yearSelect.value));
+        const months = [...new Set(parsedDates.filter(d => d.year === parseInt(yearSelect.value)).map(d => d.month))].sort((a, b) => a - b);
+        if (months.length > 0) {
+          monthSelect.value = months[months.length - 1];
+          updateDaySelection();
+        }
+      };
+
+      monthSelect.onchange = () => {
+        updateDaySelection();
+      };
+
+      daySelect.onchange = () => {
+        selectDate(parseInt(daySelect.value));
+      };
+
+      const latest = parsedDates[parsedDates.length - 1];
+      yearSelect.value = latest.year;
+      populateMonths(latest.year);
+      monthSelect.value = latest.month;
+      populateDays(latest.year, latest.month);
+      daySelect.value = latest.index;
     }
 
     function selectDate(index) {
       currentIndex = index;
-      document.querySelectorAll('.date-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-      });
       updateKPIs();
       updateSummary();
     }
