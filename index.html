@@ -335,7 +335,7 @@
         const availableMonths = [...new Set(parsedDates.filter(d => d.year === selectedYear).map(d => d.month))].sort((a, b) => a - b);
         availableMonths.forEach(month => {
           const opt = document.createElement('option');
-          opt.value = month;
+          opt.value = String(month);
           opt.textContent = month + '月';
           monthSelect.appendChild(opt);
         });
@@ -346,7 +346,7 @@
         const availableDays = parsedDates.filter(d => d.year === selectedYear && d.month === selectedMonth).sort((a, b) => a.day - b.day);
         availableDays.forEach(d => {
           const opt = document.createElement('option');
-          opt.value = d.index;
+          opt.value = String(d.index);
           opt.textContent = d.day + '日';
           daySelect.appendChild(opt);
         });
@@ -358,7 +358,7 @@
         populateDays(year, month);
         const days = parsedDates.filter(d => d.year === year && d.month === month).sort((a, b) => a.day - b.day);
         if (days.length > 0) {
-          daySelect.value = days[days.length - 1].index;
+          daySelect.value = String(days[days.length - 1].index);
           selectDate(days[days.length - 1].index);
         }
       }
@@ -366,7 +366,7 @@
       yearSelect.innerHTML = '';
       allYears.forEach(year => {
         const opt = document.createElement('option');
-        opt.value = year;
+        opt.value = String(year);
         opt.textContent = year + '年';
         yearSelect.appendChild(opt);
       });
@@ -375,7 +375,7 @@
         populateMonths(parseInt(yearSelect.value));
         const months = [...new Set(parsedDates.filter(d => d.year === parseInt(yearSelect.value)).map(d => d.month))].sort((a, b) => a - b);
         if (months.length > 0) {
-          monthSelect.value = months[months.length - 1];
+          monthSelect.value = String(months[months.length - 1]);
           updateDaySelection();
         }
       };
@@ -388,12 +388,15 @@
         selectDate(parseInt(daySelect.value));
       };
 
-      const latest = parsedDates[parsedDates.length - 1];
-      yearSelect.value = latest.year;
-      populateMonths(latest.year);
-      monthSelect.value = latest.month;
-      populateDays(latest.year, latest.month);
-      daySelect.value = latest.index;
+      // 默认选中前一天（倒数第二天）
+      const defaultIdx = Math.max(0, parsedDates.length - 2);
+      const defaultDate = parsedDates[defaultIdx];
+      yearSelect.value = String(defaultDate.year);
+      populateMonths(defaultDate.year);
+      monthSelect.value = String(defaultDate.month);
+      populateDays(defaultDate.year, defaultDate.month);
+      daySelect.value = String(defaultDate.index);
+      selectDate(defaultDate.index);
     }
 
     function selectDate(index) {
@@ -698,8 +701,6 @@
     document.addEventListener('DOMContentLoaded', function() {
       initDateSelector();
       initChart();
-      updateKPIs();
-      updateSummary();
       setUpdateTime();
     });
   </script>
