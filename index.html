@@ -311,7 +311,7 @@
     let currentIndicator = 'all';
 
     function parseDateStr(str) {
-      const match = str.match(/(d+)月(d+)日/);
+      const match = str.match(/([0-9]+)月([0-9]+)日/);
       if (match) {
         return { year: 2026, month: parseInt(match[1]), day: parseInt(match[2]) };
       }
