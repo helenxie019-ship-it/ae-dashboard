@@ -388,8 +388,22 @@
         selectDate(parseInt(daySelect.value));
       };
 
-      // 默认选中前一天（倒数第二天）
-      const defaultIdx = Math.max(0, parsedDates.length - 2);
+      // 默认选中昨天（根据当前日期动态计算）
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const yYear = yesterday.getFullYear();
+      const yMonth = yesterday.getMonth() + 1;
+      const yDay = yesterday.getDate();
+
+      let defaultIdx = parsedDates.length - 1;
+      for (let i = parsedDates.length - 1; i >= 0; i--) {
+        const d = parsedDates[i];
+        if (d.year === yYear && d.month === yMonth && d.day === yDay) {
+          defaultIdx = i;
+          break;
+        }
+      }
       const defaultDate = parsedDates[defaultIdx];
       yearSelect.value = String(defaultDate.year);
       populateMonths(defaultDate.year);
